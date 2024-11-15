@@ -9,8 +9,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { MMKV } from "react-native-mmkv";
-import { useQuery } from "@tanstack/react-query";
-import { API } from "../services/api";
+import { zodiosHooks } from "../services/api";
 import { IFavoritePokemon } from "./favorite";
 import { HeartIcon } from "lucide-react-native";
 import { ScrollView } from "react-native-gesture-handler";
@@ -32,12 +31,11 @@ export default function DetailPokemon() {
     !!favorites.find((item: IFavoritePokemon) => item.name === name)
   );
 
-  const { isPending: pokemonDetailIsPending, data: pokemonDetail } = useQuery({
-    queryKey: ["fetchPokemonDetail", name],
-    queryFn: () => API.get(`/pokemon/${name}`).then((res) => res.data),
-  });
+  const { isLoading: pokemonDetailIsPending, data: pokemonDetail } =
+    zodiosHooks.useQuery(`/pokemon/:name`, { params: { name: String(name) } });
 
   const toggleFavorite = () => {
+    if (!pokemonDetail) return;
     if (isFavorite) {
       favorites = favorites.filter(
         (item: IFavoritePokemon) => item.name !== name
@@ -53,6 +51,12 @@ export default function DetailPokemon() {
       setIsFavorite(true);
     }
   };
+
+  const spriteUrls = pokemonDetail
+    ? (Object.values(pokemonDetail.sprites).filter(
+        (url) => typeof url === "string"
+      ) as string[])
+    : [];
 
   if (pokemonDetailIsPending) {
     return (
@@ -70,16 +74,14 @@ export default function DetailPokemon() {
     );
   }
 
-  const spriteUrls = Object.values(pokemonDetail.sprites).filter(
-    (url) => typeof url === "string"
-  ) as string[];
-
   return (
     <ScrollView style={styles.scrollView}>
-      <Image
-        source={{ uri: pokemonDetail.sprites.front_default }}
-        style={styles.pokemonImage}
-      />
+      {pokemonDetail.sprites.front_default && (
+        <Image
+          source={{ uri: pokemonDetail.sprites.front_default }}
+          style={styles.pokemonImage}
+        />
+      )}
       <View style={styles.nameContainer}>
         <Text style={styles.pokemonName}>{pokemonDetail.name}</Text>
         <TouchableOpacity onPress={toggleFavorite} style={styles.favoriteIcon}>

@@ -8,8 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Link } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
-import { API } from "../services/api";
+import { zodiosHooks } from "../services/api";
 import { useForm, Controller } from "react-hook-form";
 
 interface IPokemon {
@@ -25,17 +24,15 @@ export default function HomeScreen() {
   });
   const keyword = watch("keyword");
 
-  const { isPending: pokemonListIsPending, data: pokemonList } = useQuery({
-    queryKey: ["fetchPokemons"],
-    queryFn: () =>
-      API.get("/pokemon?limit=10&offset=0").then((res) => res.data),
-  });
+  const { isLoading: pokemonListIsPending, data: pokemonList } =
+    zodiosHooks.useQuery("/pokemon", { queries: { limit: 100000, offset: 0 } });
 
-  const pokemonListByKeyword = keyword
-    ? pokemonList.results.filter((pokemon: IPokemon) =>
-        pokemon.name.toLowerCase().includes(keyword.toLowerCase())
-      )
-    : [];
+  const pokemonListByKeyword =
+    keyword && pokemonList
+      ? pokemonList.results.filter((pokemon: IPokemon) =>
+          pokemon.name.toLowerCase().includes(keyword.toLowerCase())
+        )
+      : [];
 
   const renderPokemonItem = ({
     item,
@@ -74,7 +71,11 @@ export default function HomeScreen() {
 
         {!pokemonListIsPending && (
           <FlatList
-            data={keyword ? pokemonListByKeyword : pokemonList.results}
+            data={
+              keyword
+                ? pokemonListByKeyword
+                : pokemonList && pokemonList.results
+            }
             keyExtractor={(item) => item.name}
             renderItem={renderPokemonItem}
             numColumns={2}

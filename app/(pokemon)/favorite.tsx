@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, Image, StyleSheet } from "react-native";
 import { Link } from "expo-router";
 import { MMKV } from "react-native-mmkv";
+import { useFocusEffect } from "@react-navigation/native";
 
 export interface IFavoritePokemon {
   name: string;
@@ -15,15 +16,11 @@ export default function FavoriteScreen() {
     []
   );
 
-  useEffect(() => {
-    const fetchFavorites = () => {
-      const favorites = storage.getString("favorites") || "[]";
-      const favoritesArray = JSON.parse(favorites) as IFavoritePokemon[];
-      setFavoritePokemons(favoritesArray);
-    };
-
-    fetchFavorites();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setFavoritePokemons(JSON.parse(storage.getString("favorites") || "[]"));
+    }, [])
+  );
 
   const renderFavoriteItem = ({ item }: { item: IFavoritePokemon }) => {
     const imageURL = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${item.id}.png`;
